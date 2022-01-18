@@ -3,7 +3,7 @@
 int pin_lum_1 = 0; // capteur branché sur le port A0
 int pin_lum_2 = 1; // capteur branché sur le port A1
 int pin_lum_3 = 2; // capteur branché sur le port A2
-int capteur_lum_1 = analogRead(pin_lum_1); // valeur analogique de la luminosité
+int capteur_lum_1 = 0; // valeur analogique de la luminosité
 int capteur_lum_2 = 0; // valeur analogique de la luminosité
 int capteur_lum_3 = 0; // valeur analogique de la luminosité
 int l1 = 0; // bit de lumière ou non
@@ -14,9 +14,6 @@ float level = 500.0; // valeur de luminosité de bascule
 
 char code[4]; // concaténation des 3 valeurs de capteur : 100 -> capteur 1 allumé seul, 001  -> capteur 3 allumé seul
 
-//capteur_lum_1 = analogRead(pin_lum_1); 
-//capteur_lum_2 = analogRead(pin_lum_2);
-//capteur_lum_3 = analogRead(pin_lum_3);
 
 
 void requestEvent() {

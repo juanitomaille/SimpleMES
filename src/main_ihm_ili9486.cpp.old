@@ -8,9 +8,10 @@
 * date：2021/11/5
 *******************************************************************************
 */
-#include "M5Core2.h"
+
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include <TFT_eSPI.h>
 
 WiFiClient espClient;
 PubSubClient client(espClient);
