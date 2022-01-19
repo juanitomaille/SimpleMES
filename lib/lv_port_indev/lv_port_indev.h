@@ -9,15 +9,14 @@
 #ifndef LV_PORT_INDEV_TEMPL_H
 #define LV_PORT_INDEV_TEMPL_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /*********************
  *      INCLUDES
  *********************/
-#include <lvgl.h>
-#include <FT6236.h>
+
+#include "FT6236.h"
+#include "lvgl.h"
+#include <Arduino.h>
 
 /*********************
  *      DEFINES
@@ -25,23 +24,50 @@ extern "C" {
 
 
 #define FT6236_TOUCH //Capacitive screen driver
+#define I2C_TOUCH_SCL 39
+#define I2C_TOUCH_SDA 38
+#define LCD_HEIGHT 240
+
+
+
+/**********************
+ *  STATIC VARIABLES
+ **********************/
+
+
+
 
 
 /**********************
  *      TYPEDEFS
  **********************/
 
+
+
+
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
+void lv_port_indev_init(void);
+
+/**********************
+ *  STATIC PROTOTYPES
+ **********************/
+
+static void touchpad_init(void);
+static void touchpad_read(lv_indev_drv_t * indev_drv, lv_indev_data_t * data);
+static void touchpad_get_xy(lv_coord_t * x, lv_coord_t * y);
+
+
+
+
+
 
 /**********************
  *      MACROS
  **********************/
 
-#ifdef __cplusplus
-} /*extern "C"*/
-#endif
+
 
 #endif /*LV_PORT_INDEV_TEMPL_H*/
 

@@ -4,7 +4,7 @@
 #define LGFX_USE_V1
 
 #include <LovyanGFX.hpp> /* graphic drivers */
-//#include <SPI.h>
+
 
 #define I2C_SCL 39
 #define I2C_SDA 38
@@ -87,10 +87,9 @@ public:
 };
 
 
-
-
-
 LGFX lcd;
+
+
 
 
 //Change to your screen resolution
@@ -114,39 +113,21 @@ void my_disp_flush( lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *colo
    lv_disp_flush_ready( disp );
 }
 
-
-
-/*Read the touchpad*/
-void my_touchpad_read( lv_indev_drv_t * indev_driver, lv_indev_data_t * data )
-{
-    Serial.println("inside my_touchpad_read");
-   if(ts.touched()){
-     data->state = LV_INDEV_STATE_PR;
-     TS_Point p = ts.getPoint();
-     data->point.x = p.y;
-     data->point.y = lcd.height() - p.x;
-
-     Serial.printf("x-%d,y-%d\n", data->point.x, data->point.y);
-   }else{
-     data->state = LV_INDEV_STATE_REL;
-   }
-}
-
-
  void btn_event_cb(lv_event_t * e)
 {
     Serial.println("button event");
     lv_event_code_t code = lv_event_get_code(e);
     lv_obj_t * btn = lv_event_get_target(e);
-    Serial.print("code = ");Serial.println(code);
-    /*if(code == LV_EVENT_CLICKED) {*/
+
+    if(code == LV_EVENT_CLICKED) {
         static uint8_t cnt = 0;
         cnt++;
 
         /*Get the first child of the button which is the label and change its text*/
         lv_obj_t * label = lv_obj_get_child(btn, 0);
         lv_label_set_text_fmt(label, "Button: %d", cnt);
-    /*}*/
+    }
+
 }
 
 /**
@@ -173,51 +154,40 @@ void setup(void)
     digitalWrite(LCD_BLK, HIGH);
 
     Serial.begin(9600);
+
+    /* LGVL init - graphic library */
+    lv_init();
+    lv_disp_draw_buf_init( &draw_buf, buf, NULL, screenWidth * 10 );
+
+    /* LCD screen begin */
     lcd.init();
     lcd.setRotation(1);
     lcd.setBrightness(255);
 
 
-
-    if(!ts.begin(40, I2C_SDA, I2C_SCL)){
-        Serial.println("Unable to start the capacitive touch Screen.");
-    }
-    ts.debug();
-
-
-    lv_init();
-    lv_disp_draw_buf_init( &draw_buf, buf, NULL, screenWidth * 10 );
-
-    //Initialize the display
+    //Initialize the display inside LGVL
     static lv_disp_drv_t disp_drv;
     lv_disp_drv_init(&disp_drv);
 
-    //Change the following line to your display resolution
+    //Change the following line to your display resolution in LGVL
     disp_drv.hor_res = screenWidth;
     disp_drv.ver_res = screenHeight;
     disp_drv.flush_cb = my_disp_flush;
     disp_drv.draw_buf = &draw_buf;
     lv_disp_drv_register(&disp_drv);
 
+    //Initialize the (dummy) input device driver in LGVL (lib/lv_port_indev_init)
+    lv_port_indev_init();
 
-    //Initialize the (dummy) input device driver
-    lv_indev_drv_t indev_drv;
-    lv_indev_drv_init(&indev_drv);      /*Basic initialization*/
-    indev_drv.type = LV_INDEV_TYPE_POINTER;
-    indev_drv.read_cb = my_touchpad_read;
-    /*Register the driver in LVGL and save the created input device object*/
-    lv_indev_t * my_indev = lv_indev_drv_register(&indev_drv);
- 
+
     lv_example_get_started_1();
 
 }
 
-int last_x = 240;
-int last_y = 160;
-int pos[2] = {0, 0};
+
 
 void loop()
 {
     lv_timer_handler(); /* let the GUI do its work */
-    delay(50);
+    //delay(200); /* only for debgging */
 }
