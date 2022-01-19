@@ -11,11 +11,16 @@ the solution is based on an ESP32 with a small TFT plugged by I2C with an arduin
 
  ## IHM :
 
- TFT LED panel with ESP32 attached from makerbots
+ TFT LED panel with ESP32 or ESP32-S2 attached from makerbots
 
  or 
  
  M5Stack Core2
+
+ it use LovyanGFX library for display
+ and 
+FT6236 Library from Makerfabs :
+https://github.com/Makerfabs/Makerfabs-ESP32-S2-Parallel-TFT-with-Touch/tree/main/example/simple_test/touch16_3.5
 
  ## Sensor :
 
