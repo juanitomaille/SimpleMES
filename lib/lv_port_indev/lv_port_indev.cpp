@@ -86,18 +86,12 @@ static void touchpad_read(lv_indev_drv_t * indev_drv, lv_indev_data_t * data)
 
 
     /*Save the pressed coordinates and the state*/
-    if (get_pos)
+    if (touched())
     {
-        /*
+
         last_x = getTouchPointY();
         last_y = LCD_HEIGHT - getTouchPointX();
-        */
 
-        last_x = getTouchPointX();
-        last_y = getTouchPointY();
-
-
-        //touchpad_get_xy(&last_x, &last_y);
         data->state = LV_INDEV_STATE_PR;
 
     } else {

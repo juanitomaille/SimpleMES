@@ -74,3 +74,23 @@ int ft6236_pos(int pos[2])
     pos[1] = ((YH & 0x0F) << 8) | YL;
     return 1;
 }
+
+uint8_t touched(void)
+{
+    uint8_t n = readTouchReg(FT6236_REG_NUMTOUCHES);
+    if (n > 2)
+    {
+        n = 0;
+    }
+    return n;
+}
+
+uint8_t calibrate(void)
+{
+    uint8_t n = readTouchReg(FT6236_REG_NUMTOUCHES);
+    if (n > 2)
+    {
+        n = 0;
+    }
+    return n;
+}
