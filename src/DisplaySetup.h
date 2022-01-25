@@ -2,6 +2,7 @@
 #define LGFX_USE_V1
 
 #include <LovyanGFX.hpp> /* graphic drivers */
+#include "lvgl.h"
 
 
 #define LCD_CS 37
@@ -83,3 +84,71 @@ public:
 
 
 LGFX lcd;
+
+// Display flushing 
+void my_disp_flush( lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p )
+{
+   uint32_t w = ( area->x2 - area->x1 + 1 );
+   uint32_t h = ( area->y2 - area->y1 + 1 );
+
+   lcd.startWrite();
+   lcd.setAddrWindow( area->x1, area->y1, w, h );
+   //lcd.pushColors( ( uint16_t * )&color_p->full, w * h, true );
+   lcd.writePixels((lgfx::rgb565_t *)&color_p->full, w * h);
+   lcd.endWrite();
+
+   lv_disp_flush_ready( disp );
+}
+
+// Debug messages
+
+void message_welcome (const char* txt)
+{
+    lcd.setFont(&fonts::Font4);
+    lcd.setTextFont(1);
+    lcd.setTextColor(0x00FF00U);
+    lcd.println("***************************************************");
+    lcd.println();
+    lcd.println(txt);
+    lcd.println();
+    lcd.println("***************************************************");
+    lcd.println();
+    lcd.println();
+    delay(500);
+
+}
+
+
+void message_txt (const char* txt, int ln = 0)
+{
+    lcd.setFont(&fonts::Font4);
+    lcd.setTextFont(2);
+    lcd.setTextColor(0xFFFF00U);
+    if (ln) lcd.println(txt);
+    else lcd.print(txt);
+}
+
+void message_txt_green (const char* txt)
+{
+    lcd.setFont(&fonts::Font4);
+    lcd.setTextFont(2);
+    lcd.setTextColor(0x000000U,0x00FF00U);
+    lcd.println(txt);
+
+}
+
+void message_txt_red (const char* txt, int ln = 0)
+{
+    lcd.setFont(&fonts::Font4);
+    lcd.setTextFont(2);
+    lcd.setTextColor(0xFF0000U);
+    lcd.println(txt);
+        if (ln) lcd.println(txt);
+    else lcd.print(txt);
+
+}
+
+void change_bg(lv_palette_t color)
+{
+    lv_obj_set_style_bg_color(lv_scr_act(), lv_palette_main(color), LV_PART_MAIN | LV_STATE_DEFAULT);
+}

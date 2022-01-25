@@ -1,15 +1,22 @@
+#define DEBUG  // uncomment this line for debug
+
+
 /********************************
 *                               *
 *        INCLUDES               *
 *                               *
 *******************************/
 
+#include "debug.h"
 
-#include "DisplaySetup.h"
-#include <lvgl.h>
-#include "lv_port_indev.h" /* input Driver for lvgl */
+
 #include <WiFi.h>
 #include <PubSubClient.h> /* MQTT lib */
+
+#include "DisplaySetup.h"
+#include "lvgl.h"
+#include "lv_port_indev.h" /* input Driver for lvgl */
+
 
 #include "logo_usiduc.c"
 
@@ -18,6 +25,9 @@
 *        DEFINES                *
 *                               *
 *******************************/
+
+
+#define LN  1
 
 
 #define I2C_SCL 39
@@ -80,6 +90,12 @@ void reConnect();
 
 
 
+
+
+
+
+
+
 /////////////////////////
 //   COMMUNICATIONS    //
 /////////////////////////
@@ -90,44 +106,65 @@ PubSubClient client(espClient);
 
 void setupWifi() {
   delay(10);
-  Serial.printf("Connecting to %s",ssid);
+  DPRINT("setupWifi | ");
+  DPRINT("Connecting to ");
+  DPRINT(ssid);
+  DPRINTLN("(SSID)");
+
+  message_txt ("Connecting to ");
+  message_txt (ssid, LN);
+
+
+
   WiFi.mode(WIFI_STA);  //Set the mode to WiFi station mode.  
   WiFi.begin(ssid, password); //Start Wifi connection.  
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial.print(".");
+    DPRINT(".");
+    message_txt (".");
   }
-  Serial.printf("\nSuccess\n");
+  DPRINTLN("ok");
+  DPRINTLN("Success");
+  message_txt ("ok", LN);
+  message_txt_green ("Succes");
+
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
-  Serial.print("Message arrived [");
-  Serial.print(topic);
-  Serial.print("] ");
+  DPRINT("Message arrived [");
+  DPRINT(topic);
+  DPRINT("] ");
   for (int i = 0; i < length; i++) {
-    Serial.print((char)payload[i]);
+    DPRINT((char)payload[i]);
   }
-  Serial.println();
+  DPRINTLN();
 }
 
 void reConnect() {
   while (!client.connected()) {
-    Serial.print("Attempting MQTT connection...");
+    DPRINTLN("Attempting MQTT connection...");
+    message_txt("Attempting MQTT connection...", LN);
     // Create a random client ID.  
-    String clientId = "M5Stack-";
+    String clientId = "UPRISE-";
     clientId += String(random(0xffff), HEX);
     // Attempt to connect.  尝试重新连接
     if (client.connect(clientId.c_str())) {
-      Serial.printf("\nSuccess\n");
+      DPRINTLN("Success");
+    message_txt_green ("Succes");
+
       // Once connected, publish an announcement to the topic.  
       client.publish("M5Stack", "hello world");
       // ... and resubscribe.  
       client.subscribe("M5Stack");
     } else {
-      Serial.print("failed, rc=");
-      Serial.print(client.state());
-      Serial.println("try again in 5 seconds");
+      DPRINT("failed, rc=");
+      DPRINT(client.state());
+      DPRINTLN(" -> try again in 5 seconds");
+        message_txt_red ("Failed, rc=");
+        //message_txt((const char*) client.state());
+        message_txt_red(" -> try again in 5 seconds", LN);
+
       delay(5000);
     }
   }
@@ -142,20 +179,6 @@ void reConnect() {
 
 
 
-// Display flushing 
-void my_disp_flush( lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p )
-{
-   uint32_t w = ( area->x2 - area->x1 + 1 );
-   uint32_t h = ( area->y2 - area->y1 + 1 );
-
-   lcd.startWrite();
-   lcd.setAddrWindow( area->x1, area->y1, w, h );
-   //lcd.pushColors( ( uint16_t * )&color_p->full, w * h, true );
-   lcd.writePixels((lgfx::rgb565_t *)&color_p->full, w * h);
-   lcd.endWrite();
-
-   lv_disp_flush_ready( disp );
-}
 
 
 static void mask_event_cb(lv_event_t * e)
@@ -224,9 +247,9 @@ void lv_example_roller_3(void)
     lv_obj_add_style(roller1, &style, 0);
     lv_obj_set_style_bg_opa(roller1, LV_OPA_TRANSP, LV_PART_SELECTED);
 
-#if LV_FONT_MONTSERRAT_22
-    lv_obj_set_style_text_font(roller1, &lv_font_montserrat_22, LV_PART_SELECTED);
-#endif
+    #if LV_FONT_MONTSERRAT_22
+        lv_obj_set_style_text_font(roller1, &lv_font_montserrat_22, LV_PART_SELECTED);
+    #endif
 
     lv_roller_set_options(roller1,
                         "ARRET 1 - Changement d'outil\n"
@@ -331,6 +354,187 @@ void construct_buttons(void)
 }
 
 
+void Machine_stopped_message(void)
+{
+    change_bg(LV_PALETTE_ORANGE);
+
+    /*Create a style for the shadow*/
+    static lv_style_t style_shadow;
+    lv_style_init(&style_shadow);
+    lv_style_set_text_opa(&style_shadow, LV_OPA_30);
+    lv_style_set_text_color(&style_shadow, lv_color_black());
+    lv_style_set_text_font(&style_shadow, &lv_font_montserrat_48);
+
+    static lv_style_t txt_style;
+    lv_style_init(&txt_style);
+    lv_style_set_text_font(&txt_style, &lv_font_montserrat_48);
+
+
+    /*Create a label for the shadow first (it's in the background)*/
+    lv_obj_t * shadow_label = lv_label_create(lv_scr_act());
+    lv_obj_add_style(shadow_label, &style_shadow, 0);
+
+    /*Create the main label*/
+    lv_obj_t * main_label = lv_label_create(lv_scr_act());
+    lv_obj_add_style(main_label, &txt_style, 0);
+    lv_label_set_text(main_label, "  ARRET\n"
+                                    "MACHINE");
+
+
+    /*Set the same text for the shadow label*/
+    lv_label_set_text(shadow_label, lv_label_get_text(main_label));
+
+    /*Position the main label*/
+    lv_obj_align(main_label, LV_ALIGN_CENTER, 0, 0);
+
+    /*Shift the second label down and to the right by 2 pixel*/
+    lv_obj_align_to(shadow_label, main_label, LV_ALIGN_TOP_LEFT, 2, 2);
+}
+
+void Machine_producing_message(void)
+{
+    change_bg(LV_PALETTE_GREEN);
+
+    /*Create a style for the shadow*/
+    static lv_style_t style_shadow;
+    lv_style_init(&style_shadow);
+    lv_style_set_text_opa(&style_shadow, LV_OPA_30);
+    lv_style_set_text_color(&style_shadow, lv_color_black());
+    lv_style_set_text_font(&style_shadow, &lv_font_montserrat_48);
+
+    static lv_style_t txt_style;
+    lv_style_init(&txt_style);
+    lv_style_set_text_font(&txt_style, &lv_font_montserrat_48);
+
+
+    /*Create a label for the shadow first (it's in the background)*/
+    lv_obj_t * shadow_label = lv_label_create(lv_scr_act());
+    lv_obj_add_style(shadow_label, &style_shadow, 0);
+
+    /*Create the main label*/
+    lv_obj_t * main_label = lv_label_create(lv_scr_act());
+    lv_obj_add_style(main_label, &txt_style, 0);
+    lv_label_set_text(main_label, "PRODUCTION");
+
+
+    /*Set the same text for the shadow label*/
+    lv_label_set_text(shadow_label, lv_label_get_text(main_label));
+
+    /*Position the main label*/
+    lv_obj_align(main_label, LV_ALIGN_CENTER, 0, 0);
+
+    /*Shift the second label down and to the right by 2 pixel*/
+    lv_obj_align_to(shadow_label, main_label, LV_ALIGN_TOP_LEFT, 2, 2);
+}
+
+void Machine_available_message(void)
+{
+    change_bg(LV_PALETTE_RED);
+
+    /*Create a style for the shadow*/
+    static lv_style_t style_shadow;
+    lv_style_init(&style_shadow);
+    lv_style_set_text_opa(&style_shadow, LV_OPA_30);
+    lv_style_set_text_color(&style_shadow, lv_color_black());
+    lv_style_set_text_font(&style_shadow, &lv_font_montserrat_48);
+
+    static lv_style_t txt_style;
+    lv_style_init(&txt_style);
+    lv_style_set_text_font(&txt_style, &lv_font_montserrat_48);
+
+
+    /*Create a label for the shadow first (it's in the background)*/
+    lv_obj_t * shadow_label = lv_label_create(lv_scr_act());
+    lv_obj_add_style(shadow_label, &style_shadow, 0);
+
+    /*Create the main label*/
+    lv_obj_t * main_label = lv_label_create(lv_scr_act());
+    lv_obj_add_style(main_label, &txt_style, 0);
+    lv_label_set_text(main_label, "DISPONIBLE");
+
+
+    /*Set the same text for the shadow label*/
+    lv_label_set_text(shadow_label, lv_label_get_text(main_label));
+
+    /*Position the main label*/
+    lv_obj_align(main_label, LV_ALIGN_CENTER, 0, 0);
+
+    /*Shift the second label down and to the right by 2 pixel*/
+    lv_obj_align_to(shadow_label, main_label, LV_ALIGN_TOP_LEFT, 2, 2);
+}
+
+void No_machine_message(void)
+{
+    change_bg(LV_PALETTE_DEEP_PURPLE);
+
+    /*Create a style for the shadow*/
+    static lv_style_t style_shadow;
+    lv_style_init(&style_shadow);
+    lv_style_set_text_opa(&style_shadow, LV_OPA_30);
+    lv_style_set_text_color(&style_shadow, lv_color_black());
+    lv_style_set_text_font(&style_shadow, &lv_font_montserrat_48);
+
+    static lv_style_t txt_style;
+    lv_style_init(&txt_style);
+    lv_style_set_text_font(&txt_style, &lv_font_montserrat_48);
+
+
+    /*Create a label for the shadow first (it's in the background)*/
+    lv_obj_t * shadow_label = lv_label_create(lv_scr_act());
+    lv_obj_add_style(shadow_label, &style_shadow, 0);
+
+    /*Create the main label*/
+    lv_obj_t * main_label = lv_label_create(lv_scr_act());
+    lv_obj_add_style(main_label, &txt_style, 0);
+    lv_label_set_text(main_label, "NO SIGNAL");
+
+
+    /*Set the same text for the shadow label*/
+    lv_label_set_text(shadow_label, lv_label_get_text(main_label));
+
+    /*Position the main label*/
+    lv_obj_align(main_label, LV_ALIGN_CENTER, 0, 0);
+
+    /*Shift the second label down and to the right by 2 pixel*/
+    lv_obj_align_to(shadow_label, main_label, LV_ALIGN_TOP_LEFT, 2, 2);
+}
+
+void Machine_error_message(void)
+{
+    change_bg(LV_PALETTE_DEEP_ORANGE);
+
+    /*Create a style for the shadow*/
+    static lv_style_t style_shadow;
+    lv_style_init(&style_shadow);
+    lv_style_set_text_opa(&style_shadow, LV_OPA_30);
+    lv_style_set_text_color(&style_shadow, lv_color_black());
+    lv_style_set_text_font(&style_shadow, &lv_font_montserrat_48);
+
+    static lv_style_t txt_style;
+    lv_style_init(&txt_style);
+    lv_style_set_text_font(&txt_style, &lv_font_montserrat_48);
+
+
+    /*Create a label for the shadow first (it's in the background)*/
+    lv_obj_t * shadow_label = lv_label_create(lv_scr_act());
+    lv_obj_add_style(shadow_label, &style_shadow, 0);
+
+    /*Create the main label*/
+    lv_obj_t * main_label = lv_label_create(lv_scr_act());
+    lv_obj_add_style(main_label, &txt_style, 0);
+    lv_label_set_text(main_label, "ERREUR");
+
+
+    /*Set the same text for the shadow label*/
+    lv_label_set_text(shadow_label, lv_label_get_text(main_label));
+
+    /*Position the main label*/
+    lv_obj_align(main_label, LV_ALIGN_CENTER, 0, 0);
+
+    /*Shift the second label down and to the right by 2 pixel*/
+    lv_obj_align_to(shadow_label, main_label, LV_ALIGN_TOP_LEFT, 2, 2);
+}
+
 
 
 /////////////////////////
@@ -348,7 +552,7 @@ void setup(void)
     digitalWrite(LCD_CS, LOW);
     digitalWrite(LCD_BLK, HIGH);
 
-    Serial.begin(9600);
+    DBEGIN(9600);
 
 
 
@@ -377,6 +581,9 @@ void setup(void)
     lv_disp_drv_register(&disp_drv);
 
 
+    message_welcome("UP-RISE SAS - PART of PME4.0");
+
+
 
     setupWifi(); // concrens wifi setup
     client.setServer(mqtt_server, 1883);  //Sets the MQTT server details.  
@@ -384,7 +591,7 @@ void setup(void)
 
     //Serial.setTextColor(YELLOW);  //Set the font color to yellow. 
     //Serial.setTextSize(1);  //Set the font size to 2.  
-    Serial.println("PME4.0 - Machine State -DEBUG"); //Print a string on the screen.  
+    DPRINTLN("PME4.0 - Machine State -DEBUG"); //Print a string on the screen.  
     delay(1000);
     //Serial.fillScreen( BLACK ); //Make the screen full of black (equivalent to clear() to clear the screen). 
     //Serial.setTextColor(WHITE);  //Set the font color to yellow. 
@@ -402,9 +609,15 @@ void setup(void)
 
  //   lv_example_roller_3();
 
-    construct_buttons();
+    //construct_buttons();
 
     //lv_img_logo();
+    //Machine_stopped_message();
+    //Machine_producing_message();
+    //Machine_available_message();
+    //Machine_error_message();
+   // No_machine_message();
+
 
 }
 
@@ -412,6 +625,10 @@ void setup(void)
 /////////////////////////
 //       LOOP          //
 /////////////////////////
+
+int last_vert = 2;  // no 0 or 1 to init 
+int last_orange = 2;
+int last_rouge = 2;
 
 
 void loop()
@@ -455,70 +672,47 @@ void loop()
     int orange = data[1] - '0';
     int rouge = data[2] - '0';
 
-    //M5.Lcd.setTextSize(2);  //Set the font size to 2. 
-    int hauteur_txt = 110;
+    vert = 0;
+    rouge = 1;
+    orange = 0;
+
+    if (last_rouge != rouge | last_vert != vert | last_orange != orange )
+    {
+
+        if (vert == 1 && orange == 0 && rouge == 0 )
+        {
+            Machine_producing_message();
+        }
+        else if (orange == 1 && vert == 0 && rouge == 0)
+        {
+            Machine_stopped_message();
+            
+        }
+        else if (rouge == 1 && vert == 0 && orange == 0)
+        {
+            Machine_available_message();
+        }
+        else if (vert == 1 && rouge == 1 && orange ==0 )
+        {
+            Machine_stopped_message();
+        }
+        else if (vert == 0 && rouge == 0 && orange == 0)
+        {
+            No_machine_message(); // pas de signal
+        }
+
+        else 
+        {
+            Machine_error_message();
+        }
+    }
     
-    if (vert == 1 && orange == 0 && rouge == 0 ){
-        //textColor=BLACK;
-        /*
-        M5.Lcd.setTextColor(textColor,GREEN); //Set the foreground color of the text to textColor and the background color to BLACK. 
-        M5.Lcd.fillScreen( GREEN ); //Make the screen full of black (equivalent to clear() to clear the screen). 
-        M5.Lcd.setCursor(30,hauteur_txt);
-        M5.Lcd.print("MACHINE EN PRODUCTION");
-        */
-    }
-    else if (orange == 1 && vert == 0 && rouge == 0){
-        //textColor=BLACK;
-        /*
-        M5.Lcd.setTextColor(textColor,YELLOW); //Set the foreground color of the text to textColor and the background color to BLACK. 
-        M5.Lcd.fillScreen( YELLOW ); //Make the screen full of black (equivalent to clear() to clear the screen). 
-        M5.Lcd.setCursor(60,hauteur_txt);
-        M5.Lcd.print("MACHINE EN PAUSE");
-        */
-    }
-    else if (rouge == 1 && vert == 0 && orange == 0){
-        //textColor=RED;
-        /*
-        M5.Lcd.setTextSize(4);
-        M5.Lcd.setTextColor(textColor,BLACK); //Set the foreground color of the text to textColor and the background color to BLACK. 
-        M5.Lcd.fillScreen( BLACK ); //Make the screen full of black (equivalent to clear() to clear the screen). 
-        M5.Lcd.setCursor(110,hauteur_txt);
-        M5.Lcd.print("ARRET");
-        */
-    }
-    else if (vert == 1 && rouge == 1 && orange ==0 ){
-        //textColor=BLACK;
-        /*
-        M5.Lcd.setTextColor(textColor,YELLOW); //Set the foreground color of the text to textColor and the background color to BLACK.
-        M5.Lcd.fillScreen( YELLOW ); //Make the screen full of black (equivalent to clear() to clear the screen). 
-        M5.Lcd.setCursor(60,hauteur_txt); 
-        M5.Lcd.print("MACHINE EN PAUSE");
-        */
-    }
-    else if (vert == 0 && rouge == 0 && orange == 0){
-        //textColor=WHITE;      
-        /*
-        M5.Lcd.setTextSize(4);
-        M5.Lcd.setTextColor(textColor,BLACK); //Set the foreground color of the text to textColor and the background color to BLACK. 
-        M5.Lcd.fillScreen( BLACK ); //Make the screen full of black (equivalent to clear() to clear the screen). 
-        M5.Lcd.setCursor(60,hauteur_txt);
-        M5.Lcd.print("NO SIGNAL");
-        */
-    }
+    
 
-    else {
-        //textColor=WHITE;
-        /*
-        M5.Lcd.setTextSize(4);
-        M5.Lcd.setTextColor(textColor,RED); //Set the foreground color of the text to textColor and the background color to RED. 
-        M5.Lcd.fillScreen( RED ); //Make the screen full of black (equivalent to clear() to clear the screen). 
-        M5.Lcd.setCursor(100,hauteur_txt);
-        M5.Lcd.print("ERREUR");
-        */
-    }
 
-    //M5.Lcd.fillScreen(BLACK);
-    //M5.Lcd.setCursor(0,0);
+    last_vert = vert;
+    last_orange = orange;
+    last_rouge = rouge;
 
     lv_timer_handler(); /* let the GUI do its work */
     //delay(200); /* only for debgging */

@@ -17,6 +17,7 @@
 #include "FT6236.h"
 #include "lvgl.h"
 #include <Arduino.h>
+#include "debug.h"
 
 /*********************
  *      DEFINES

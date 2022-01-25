@@ -7,7 +7,10 @@
 
 #if 1
 
+
 #include "lv_port_indev.h"
+
+
 
 #define get_pos ft6236_pos
 
@@ -64,14 +67,14 @@ static void touchpad_init(void)
 
     if (error == 0)
     {
-        Serial.print("I2C device found at address 0x");
-        Serial.print(i2c_touch_addr, HEX);
-        Serial.println("  !");
+        DPRINT("I2C device found at address 0x");
+        DPRINT(i2c_touch_addr, HEX);
+        DPRINTLN("  !");
     }
     else if (error == 4)
     {
-        Serial.print("Unknown error at address 0x");
-        Serial.println(i2c_touch_addr, HEX);
+        DPRINT("Unknown error at address 0x");
+        DPRINTLN(i2c_touch_addr, HEX);
     }
 
 }
@@ -79,7 +82,7 @@ static void touchpad_init(void)
 /*Will be called by the library to read the touchpad*/
 static void touchpad_read(lv_indev_drv_t * indev_drv, lv_indev_data_t * data)
 {
-    //Serial.println("touchpad_read() called");
+    //DPRINTLN("touchpad_read() called");
 
     static lv_coord_t last_x = 0;
     static lv_coord_t last_y = 0;
@@ -102,11 +105,11 @@ static void touchpad_read(lv_indev_drv_t * indev_drv, lv_indev_data_t * data)
     data->point.x = last_x;
     data->point.y = last_y;
 /*
-        Serial.print("Touch coord. | x:");
-        Serial.print(data->point.x);
-        Serial.print(", y : ");
-        Serial.print(data->point.y);
-        Serial.println();
+        DPRINT("Touch coord. | x:");
+        DPRINT(data->point.x);
+        DPRINT(", y : ");
+        DPRINT(data->point.y);
+        DPRINTLN();
 */
 }
 
