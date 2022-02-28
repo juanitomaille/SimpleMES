@@ -356,6 +356,8 @@ void construct_buttons(void)
 
 void Machine_stopped_message(void)
 {
+    
+    lv_obj_clean(lv_scr_act());
     change_bg(LV_PALETTE_ORANGE);
 
     /*Create a style for the shadow*/
@@ -393,6 +395,7 @@ void Machine_stopped_message(void)
 
 void Machine_producing_message(void)
 {
+    lv_obj_clean(lv_scr_act());
     change_bg(LV_PALETTE_GREEN);
 
     /*Create a style for the shadow*/
@@ -429,6 +432,7 @@ void Machine_producing_message(void)
 
 void Machine_available_message(void)
 {
+    lv_obj_clean(lv_scr_act());
     change_bg(LV_PALETTE_RED);
 
     /*Create a style for the shadow*/
@@ -465,6 +469,7 @@ void Machine_available_message(void)
 
 void No_machine_message(void)
 {
+    lv_obj_clean(lv_scr_act());
     change_bg(LV_PALETTE_DEEP_PURPLE);
 
     /*Create a style for the shadow*/
@@ -501,6 +506,7 @@ void No_machine_message(void)
 
 void Machine_error_message(void)
 {
+    lv_obj_clean(lv_scr_act());
     change_bg(LV_PALETTE_DEEP_ORANGE);
 
     /*Create a style for the shadow*/
@@ -553,7 +559,6 @@ void setup(void)
     digitalWrite(LCD_BLK, HIGH);
 
     DBEGIN(9600);
-
 
 
     /* LGVL init - graphic library */
@@ -626,9 +631,13 @@ void setup(void)
 //       LOOP          //
 /////////////////////////
 
-int last_vert = 2;  // no 0 or 1 to init 
-int last_orange = 2;
-int last_rouge = 2;
+int last_vert;
+int last_orange;
+int last_rouge;
+
+int vert;
+int orange; 
+int rouge;
 
 
 void loop()
@@ -640,69 +649,99 @@ void loop()
     client.loop();  //MQTT : This function is called periodically to allow clients to process incoming messages and maintain connections to the server.
 
     unsigned long now = millis(); //Obtain the host startup duration.  
-    if (now - lastMsg > 2000) {
+    if (now - lastMsg > 2000) 
+    {
         lastMsg = now;
         ++value;
-        //snprintf (msg, MSG_BUFFER_SIZE, "hello world #%ld", value); //Format to the specified string and store it in MSG.  
-        //msg = String(t).c_str();
-        //M5.Lcd.print("Publish message: ");
-        //M5.Lcd.println(String(t).c_str());
+
         client.publish("M5Stack/temp", String(t).c_str());  //Publishes a message to the specified topic.  
+        
+        /*    
         Wire.requestFrom(2, 3);   // L'adresse du arduino sera 2
         int i = 0;
         while(Wire.available())    // slave may send less than requested
         {
             char c = Wire.read();    // receive a byte as character
             data[i] = c;
-            i = i + 1 ; 
+            i = i + 1 ;
+            DPRINT("I2C Receive :");
+            DPRINTLN(c); 
         }
 
+        vert = data[0] - '0'; // method to convert char in int
+        orange = data[1] - '0';
+        rouge = data[2] - '0';
+        */
+
+    }
+    else
+    {
+        vert = last_vert;  // we keep last value before delay
+        rouge = last_rouge;
+        orange = last_orange;
     }
 
+    
     Wire.requestFrom(2, 3);   // L'adresse du arduino sera 2
     int i = 0;
     while(Wire.available())    // slave may send less than requested
     {
         char c = Wire.read();    // receive a byte as character
         data[i] = c;
-        i = i + 1 ; 
+        i = i + 1 ;
+//        DPRINT("I2C Receive :");
+//        DPRINTLN(c); 
     }
 
-    int vert = data[0] - '0'; // method to convert char in int
-    int orange = data[1] - '0';
-    int rouge = data[2] - '0';
+    vert = data[0] - '0'; // method to convert char in int
+    orange = data[1] - '0';
+    rouge = data[2] - '0';
 
-    vert = 0;
-    rouge = 1;
-    orange = 0;
+
 
     if (last_rouge != rouge | last_vert != vert | last_orange != orange )
     {
 
+
+
+
+        DPRINT("SimpleMES | Etat machine :");
+        DPRINT("Vert/orange/rouge -> ");
+        DPRINT(vert);
+        DPRINT(orange);
+        DPRINTLN(rouge);
+
+
         if (vert == 1 && orange == 0 && rouge == 0 )
         {
+            DPRINTLN("SimpleMES | Machine en production");
             Machine_producing_message();
         }
         else if (orange == 1 && vert == 0 && rouge == 0)
         {
+            DPRINTLN("SimpleMES | Machine en arrêt");
             Machine_stopped_message();
             
         }
         else if (rouge == 1 && vert == 0 && orange == 0)
         {
+            DPRINTLN("SimpleMES | Machine disponible");
             Machine_available_message();
         }
         else if (vert == 1 && rouge == 1 && orange ==0 )
         {
+            DPRINTLN("SimpleMES | Machine en arrêt");
             Machine_stopped_message();
         }
         else if (vert == 0 && rouge == 0 && orange == 0)
         {
+            DPRINTLN("SimpleMES | Pas de signal");
             No_machine_message(); // pas de signal
         }
 
         else 
         {
+            DPRINTLN("SimpleMES | Erreur !");
             Machine_error_message();
         }
     }

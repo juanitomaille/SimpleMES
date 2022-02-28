@@ -10,6 +10,12 @@ int l1 = 0; // bit de lumière ou non
 int l2 = 0;
 int l3 = 0;
 
+
+unsigned long retention_time_lum_1 = 0; // retention de l'information pendant 1000ms pour ne pas prendre en compte le clignotement des signaux
+unsigned long retention_time_lum_2 = 0;
+unsigned long retention_time_lum_3 = 0;
+
+
 float level = 500.0; // valeur de luminosité de bascule 
 
 char code[4]; // concaténation des 3 valeurs de capteur : 100 -> capteur 1 allumé seul, 001  -> capteur 3 allumé seul
@@ -38,24 +44,44 @@ void loop(void) {
 
 //float analog_lum = (float)(1023 - sensorValue) * 10 / sensorValue; // Résistance du capteur en Kilo ohms -> formule au cas ou
 
+  unsigned long now = millis();
 
   if( capteur_lum_1 > level)
   {
     l1 = 1;
+    retention_time_lum_1 = now;
+    retention_time_lum_2 = 0;  // passer à 0 les autres permet de basculer sans attendre la rétention
+    retention_time_lum_3 = 0;
   }
-  else l1 = 0;
+  else if(now - retention_time_lum_1 > 1000 | retention_time_lum_2 !=0 | retention_time_lum_3 != 0) // met à 0 si on a attendu 1000ms ou si une autre lumière s'allume
+  {
+    l1 = 0;
+    retention_time_lum_1 = 0; // évite le rebond sur une autre couleur
+  }
 
   if( capteur_lum_2 > level)
   {
     l2 = 1;
+    retention_time_lum_2 = now;
+    retention_time_lum_1 = 0;
+    retention_time_lum_3 = 0;
   } 
-  else l2 = 0;
+  else if(now - retention_time_lum_2 > 1000 | retention_time_lum_1 !=0 | retention_time_lum_3 != 0)
+  {
+    l2 = 0;
+  }
 
   if( capteur_lum_3 > level)
   {
     l3 = 1;
+    retention_time_lum_3 = now;
+    retention_time_lum_2 = 0;
+    retention_time_lum_1 = 0;
   }
-  else l3 = 0;
+  else if(now - retention_time_lum_3 > 1000 | retention_time_lum_2 !=0 | retention_time_lum_1 != 0)
+  {
+    l3 = 0;
+  }
 
   snprintf(code, 4, "%d%d%d", l1, l2, l3);
 
