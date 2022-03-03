@@ -11,7 +11,8 @@
 
 
 #include <WiFi.h>
-#include <PubSubClient.h> /* MQTT lib */
+#include <HTTPClient.h>
+#include <string.h>
 
 #include "DisplaySetup.h"
 #include "lvgl.h"
@@ -35,6 +36,9 @@
 
 #define MSG_BUFFER_SIZE	(50)
 
+
+#define CUSTOMER "USIDUC"
+
 /********************************
 *                               *
 *        VARIABLES              *
@@ -45,7 +49,6 @@
 // Configure the name and password of the connected wifi and your MQTT Serve host.
 const char* ssid = "FACTORYBOX";
 const char* password = "Jm9r5F3W";
-const char* mqtt_server = "factorybox";
 
 unsigned long lastMsg = 0;
 
@@ -55,10 +58,6 @@ char data[3];
 char code[3]; // Color of column : 000 = no color; 100 = green, 010 = orange, 001 = red
 
 
-float t = 19; // just for test
-
-
-
 //Change to your screen resolution
 static const uint32_t screenWidth  = 480;
 static const uint32_t screenHeight = 320;
@@ -66,6 +65,13 @@ static lv_disp_draw_buf_t draw_buf;
 static lv_color_t buf[ screenWidth * 10 ];
 
 
+// customer + machine
+
+const char* customer = "USIDUC";
+String machine = "QUASER";
+
+
+const char* state; // statut machine
 
 
 
@@ -77,8 +83,7 @@ static lv_color_t buf[ screenWidth * 10 ];
 
 
 void setupWifi();
-void callback(char* topic, byte* payload, unsigned int length);
-void reConnect();
+void SendDatabase(String client, String machine, String status) ;
 
 
 
@@ -101,7 +106,7 @@ void reConnect();
 /////////////////////////
 
 WiFiClient espClient;
-PubSubClient client(espClient);
+//PubSubClient client(espClient);
 
 
 void setupWifi() {
@@ -127,47 +132,26 @@ void setupWifi() {
   DPRINTLN("ok");
   DPRINTLN("Success");
   message_txt ("ok", LN);
-  message_txt_green ("Succes");
+  message_txt_green ("Success");
 
 }
 
-void callback(char* topic, byte* payload, unsigned int length) {
-  DPRINT("Message arrived [");
-  DPRINT(topic);
-  DPRINT("] ");
-  for (int i = 0; i < length; i++) {
-    DPRINT((char)payload[i]);
-  }
-  DPRINTLN();
-}
 
-void reConnect() {
-  while (!client.connected()) {
-    DPRINTLN("Attempting MQTT connection...");
-    message_txt("Attempting MQTT connection...", LN);
-    // Create a random client ID.  
-    String clientId = "UPRISE-";
-    clientId += String(random(0xffff), HEX);
-    // Attempt to connect.  尝试重新连接
-    if (client.connect(clientId.c_str())) {
-      DPRINTLN("Success");
-    message_txt_green ("Succes");
+void SendDatabase(String client, String machine, String status) {
+        // start connexion to influDB
+        HTTPClient http;
+        http.begin("http://factorybox.local:8086/write?db=" + client);
+        http.addHeader("Content-Type", "--data-binary");
 
-      // Once connected, publish an announcement to the topic.  
-      client.publish("M5Stack", "hello world");
-      // ... and resubscribe.  
-      client.subscribe("M5Stack");
-    } else {
-      DPRINT("failed, rc=");
-      DPRINT(client.state());
-      DPRINTLN(" -> try again in 5 seconds");
-        message_txt_red ("Failed, rc=");
-        //message_txt((const char*) client.state());
-        message_txt_red(" -> try again in 5 seconds", LN);
+        String postData = machine + " state=\"" + status + "\"";
+        int httpResponseCode = http.POST(postData);
+        
+        if (httpResponseCode != 204) {
+            DPRINT("Error code: ");
+            DPRINTLN(httpResponseCode);
+        }
 
-      delay(5000);
-    }
-  }
+        http.end(); //end of sending influDB DATA 
 }
 
 
@@ -269,6 +253,7 @@ void lv_example_roller_3(void)
 }
 
 // Logo of customer
+
 void lv_img_logo(void)
 
 {   
@@ -391,6 +376,7 @@ void Machine_stopped_message(void)
 
     /*Shift the second label down and to the right by 2 pixel*/
     lv_obj_align_to(shadow_label, main_label, LV_ALIGN_TOP_LEFT, 2, 2);
+    DPRINTLN("AFFICHAGE MESSAGE ORANGE ARRET ");
 }
 
 void Machine_producing_message(void)
@@ -428,6 +414,7 @@ void Machine_producing_message(void)
 
     /*Shift the second label down and to the right by 2 pixel*/
     lv_obj_align_to(shadow_label, main_label, LV_ALIGN_TOP_LEFT, 2, 2);
+    DPRINTLN("AFFICHAGE MESSAGE VERT PROD");
 }
 
 void Machine_available_message(void)
@@ -465,6 +452,7 @@ void Machine_available_message(void)
 
     /*Shift the second label down and to the right by 2 pixel*/
     lv_obj_align_to(shadow_label, main_label, LV_ALIGN_TOP_LEFT, 2, 2);
+    DPRINTLN("AFFICHAGE MESSAGE ROUGE ");
 }
 
 void No_machine_message(void)
@@ -502,6 +490,7 @@ void No_machine_message(void)
 
     /*Shift the second label down and to the right by 2 pixel*/
     lv_obj_align_to(shadow_label, main_label, LV_ALIGN_TOP_LEFT, 2, 2);
+    DPRINTLN("AFFICHAGE MESSAGE VIOLET NO SIGNAL ");
 }
 
 void Machine_error_message(void)
@@ -539,6 +528,7 @@ void Machine_error_message(void)
 
     /*Shift the second label down and to the right by 2 pixel*/
     lv_obj_align_to(shadow_label, main_label, LV_ALIGN_TOP_LEFT, 2, 2);
+    DPRINTLN("AFFICHAGE MESSAGE ERREUR ");
 }
 
 
@@ -591,19 +581,11 @@ void setup(void)
 
 
     setupWifi(); // concrens wifi setup
-    client.setServer(mqtt_server, 1883);  //Sets the MQTT server details.  
-    client.setCallback(callback); //Sets the message callback function for MQTT
 
     //Serial.setTextColor(YELLOW);  //Set the font color to yellow. 
     //Serial.setTextSize(1);  //Set the font size to 2.  
     DPRINTLN("PME4.0 - Machine State -DEBUG"); //Print a string on the screen.  
     delay(1000);
-    //Serial.fillScreen( BLACK ); //Make the screen full of black (equivalent to clear() to clear the screen). 
-    //Serial.setTextColor(WHITE);  //Set the font color to yellow. 
-
-
-
-
 
 
     //Initialize the (dummy) input device driver in LGVL (lib/lv_port_indev_init)
@@ -616,7 +598,7 @@ void setup(void)
 
     //construct_buttons();
 
-    //lv_img_logo();
+    lv_img_logo();
     //Machine_stopped_message();
     //Machine_producing_message();
     //Machine_available_message();
@@ -631,9 +613,9 @@ void setup(void)
 //       LOOP          //
 /////////////////////////
 
-int last_vert;
-int last_orange;
-int last_rouge;
+int last_vert = 0;
+int last_orange = 0;
+int last_rouge = 0;
 
 int vert;
 int orange; 
@@ -642,46 +624,7 @@ int rouge;
 
 void loop()
 {
-    //MQTT communication
-    if (!client.connected()) {
-        reConnect();
-    }
-    client.loop();  //MQTT : This function is called periodically to allow clients to process incoming messages and maintain connections to the server.
 
-    unsigned long now = millis(); //Obtain the host startup duration.  
-    if (now - lastMsg > 2000) 
-    {
-        lastMsg = now;
-        ++value;
-
-        client.publish("M5Stack/temp", String(t).c_str());  //Publishes a message to the specified topic.  
-        
-        /*    
-        Wire.requestFrom(2, 3);   // L'adresse du arduino sera 2
-        int i = 0;
-        while(Wire.available())    // slave may send less than requested
-        {
-            char c = Wire.read();    // receive a byte as character
-            data[i] = c;
-            i = i + 1 ;
-            DPRINT("I2C Receive :");
-            DPRINTLN(c); 
-        }
-
-        vert = data[0] - '0'; // method to convert char in int
-        orange = data[1] - '0';
-        rouge = data[2] - '0';
-        */
-
-    }
-    else
-    {
-        vert = last_vert;  // we keep last value before delay
-        rouge = last_rouge;
-        orange = last_orange;
-    }
-
-    
     Wire.requestFrom(2, 3);   // L'adresse du arduino sera 2
     int i = 0;
     while(Wire.available())    // slave may send less than requested
@@ -689,20 +632,17 @@ void loop()
         char c = Wire.read();    // receive a byte as character
         data[i] = c;
         i = i + 1 ;
-//        DPRINT("I2C Receive :");
-//        DPRINTLN(c); 
     }
 
     vert = data[0] - '0'; // method to convert char in int
     orange = data[1] - '0';
     rouge = data[2] - '0';
 
+    
 
 
     if (last_rouge != rouge | last_vert != vert | last_orange != orange )
     {
-
-
 
 
         DPRINT("SimpleMES | Etat machine :");
@@ -716,43 +656,62 @@ void loop()
         {
             DPRINTLN("SimpleMES | Machine en production");
             Machine_producing_message();
+            state = "prod";
+            
         }
         else if (orange == 1 && vert == 0 && rouge == 0)
         {
             DPRINTLN("SimpleMES | Machine en arrêt");
             Machine_stopped_message();
-            
+            state = "arret";   
         }
         else if (rouge == 1 && vert == 0 && orange == 0)
         {
             DPRINTLN("SimpleMES | Machine disponible");
             Machine_available_message();
+            state = "dispo";
         }
         else if (vert == 1 && rouge == 1 && orange ==0 )
         {
             DPRINTLN("SimpleMES | Machine en arrêt");
             Machine_stopped_message();
+
+            state = "arret";
         }
-        else if (vert == 0 && rouge == 0 && orange == 0)
+        if (vert == 0 && rouge == 0 && orange == 0)
         {
             DPRINTLN("SimpleMES | Pas de signal");
             No_machine_message(); // pas de signal
+            state = "nosignal";
         }
-
         else 
         {
             DPRINTLN("SimpleMES | Erreur !");
             Machine_error_message();
+            state = "erreur";
         }
-    }
-    
-    
 
+         // start connexion to influDB
+        HTTPClient http;
+        http.begin("http://factorybox.local:8086/write?db=USIDUC");
+        http.addHeader("Content-Type", "--data-binary");
+
+        String postData = machine + " state=\"" + state + "\"";
+        int httpResponseCode = http.POST(postData);
+        
+        if (httpResponseCode != 204) {
+            DPRINT("Error code: ");
+            DPRINTLN(httpResponseCode);
+        }
+
+        http.end(); //end of sending influDB DATA 
+        
+    }
 
     last_vert = vert;
     last_orange = orange;
     last_rouge = rouge;
 
     lv_timer_handler(); /* let the GUI do its work */
-    //delay(200); /* only for debgging */
+    //delay(200); /* only for debugging */
 }
