@@ -148,7 +148,7 @@ void message_txt_red (const char* txt, int ln = 0)
 
 }
 
-void change_bg(lv_palette_t color)
+static void change_bg(lv_palette_t color)
 {
     lv_obj_set_style_bg_color(lv_scr_act(), lv_palette_main(color), LV_PART_MAIN | LV_STATE_DEFAULT);
 }

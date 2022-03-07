@@ -306,10 +306,10 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 #define LV_FONT_MONTSERRAT_10 0
 #define LV_FONT_MONTSERRAT_12 0
 #define LV_FONT_MONTSERRAT_14 1
-#define LV_FONT_MONTSERRAT_16 1
+#define LV_FONT_MONTSERRAT_16 0
 #define LV_FONT_MONTSERRAT_18 0
 #define LV_FONT_MONTSERRAT_20 0
-#define LV_FONT_MONTSERRAT_22 1
+#define LV_FONT_MONTSERRAT_22 0
 #define LV_FONT_MONTSERRAT_24 0
 #define LV_FONT_MONTSERRAT_26 0
 #define LV_FONT_MONTSERRAT_28 0
@@ -411,9 +411,9 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 
 #define LV_USE_ARC        1
 
-#define LV_USE_ANIMIMG    1
+#define LV_USE_ANIMIMG    0
 
-#define LV_USE_BAR        1
+#define LV_USE_BAR        0
 
 #define LV_USE_BTN        1
 
@@ -440,7 +440,7 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 #  define LV_ROLLER_INF_PAGES 7 /*Number of extra "pages" when the roller is infinite*/
 #endif
 
-#define LV_USE_SLIDER     1   /*Requires: lv_bar*/
+#define LV_USE_SLIDER     0   /*Requires: lv_bar*/
 
 #define LV_USE_SWITCH     1
 
@@ -449,7 +449,7 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 #  define LV_TEXTAREA_DEF_PWD_SHOW_TIME 1500    /*ms*/
 #endif
 
-#define LV_USE_TABLE      1
+#define LV_USE_TABLE      0
 
 /*==================
  * EXTRA COMPONENTS
@@ -458,7 +458,7 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 /*-----------
  * Widgets
  *----------*/
-#define LV_USE_CALENDAR   1
+#define LV_USE_CALENDAR   0
 #if LV_USE_CALENDAR
 # define LV_CALENDAR_WEEK_STARTS_MONDAY 0
 # if LV_CALENDAR_WEEK_STARTS_MONDAY
@@ -594,7 +594,7 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 *==================*/
 
 /*Enable the examples to be built with the library*/
-#define LV_BUILD_EXAMPLES 1
+#define LV_BUILD_EXAMPLES 0
 
 /*--END OF LV_CONF_H--*/
 
