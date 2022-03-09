@@ -14,6 +14,8 @@
 #include <HTTPClient.h>
 #include <string.h>
 
+#include <InfluxDbClient.h>
+
 
 #include "lvgl.h"
 #include "lv_port_indev.h" /* input Driver for lvgl */
@@ -41,6 +43,25 @@
 
 
 #define CUSTOMER "USIDUC"
+
+
+
+//influxDB
+
+// InfluxDB v2 server url, e.g. https://eu-central-1-1.aws.cloud2.influxdata.com (Use: InfluxDB UI -> Load Data -> Client Libraries)
+// InfluxDB 1.8+  (v2 compatibility API) server url, e.g. http://192.168.1.48:8086
+#define INFLUXDB_URL "http://factorybox:8086"
+// InfluxDB v2 server or cloud API authentication token (Use: InfluxDB UI -> Load Data -> Tokens -> <select token>)
+// InfluxDB 1.8+ (v2 compatibility API) use form user:password, eg. admin:adminpass
+#define INFLUXDB_TOKEN "IiVS3QdWC7tmewfrE4NUdfL8vpIRcOmJgeJI2D-YF9l7KO78e6fPR9kvo1gWOFvSBs5IK-hL117j5O2zIyjP9w=="
+// InfluxDB v2 organization name or id (Use: InfluxDB UI -> Settings -> Profile -> <name under tile> )
+// InfluxDB 1.8+ (v2 compatibility API) use any non empty string
+#define INFLUXDB_ORG "USIDUC"
+// InfluxDB v2 bucket name (Use: InfluxDB UI -> Load Data -> Buckets)
+// InfluxDB 1.8+ (v2 compatibility API) use database name
+#define INFLUXDB_BUCKET "SimpleMES"
+
+
 
 /********************************
 *                               *
@@ -140,6 +161,22 @@ void setupWifi() {
 }
 
 
+
+
+
+
+
+
+// InfluxDB client instance 
+InfluxDBClient clientInfluxDB(INFLUXDB_URL, INFLUXDB_ORG, INFLUXDB_BUCKET, INFLUXDB_TOKEN);
+
+
+
+
+
+
+
+/*
 void SendDatabase(String client, String machine, String status) {
         // start connexion to influDB
         HTTPClient http;
@@ -156,7 +193,7 @@ void SendDatabase(String client, String machine, String status) {
 
         http.end(); //end of sending influDB DATA 
 }
-
+*/
 
 
 
@@ -334,22 +371,16 @@ void loop()
             state = "erreur";
         }
 
-         // start connexion to influDB
-        HTTPClient http;
-        http.begin("http://factorybox:8086/api/v2/write?org=USIDUC&bucket=SimpleMES&precision=ns");
-        http.addHeader("Authorization", "IiVS3QdWC7tmewfrE4NUdfL8vpIRcOmJgeJI2D-YF9l7KO78e6fPR9kvo1gWOFvSBs5IK-hL117j5O2zIyjP9w==");
-        http.addHeader("Accept:", "application/json");
-        http.addHeader("Content-Type", "--data-binary");
+         // Define data point in the measurement named 'device_status`
+        Point pointDevice("machine_status");
+        // Set tags
+        pointDevice.addTag("machine", machine);
+        // Add data fields
+        pointDevice.addField("state", state);
 
-        String postData = machine + " state=\"" + state + "\"";
-        int httpResponseCode = http.POST(postData);
-        
-        if (httpResponseCode != 204) {
-            DPRINT("Error code: ");
-            DPRINTLN(httpResponseCode);
-        }
 
-        http.end(); //end of sending influDB DATA 
+        // Write data
+        clientInfluxDB.writePoint(pointDevice); 
         
     }
 
