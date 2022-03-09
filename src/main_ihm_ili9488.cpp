@@ -336,7 +336,9 @@ void loop()
 
          // start connexion to influDB
         HTTPClient http;
-        http.begin("http://factorybox.local:8086/write?db=USIDUC");
+        http.begin("http://factorybox:8086/api/v2/write?org=USIDUC&bucket=SimpleMES&precision=ns");
+        http.addHeader("Authorization", "IiVS3QdWC7tmewfrE4NUdfL8vpIRcOmJgeJI2D-YF9l7KO78e6fPR9kvo1gWOFvSBs5IK-hL117j5O2zIyjP9w==");
+        http.addHeader("Accept:", "application/json");
         http.addHeader("Content-Type", "--data-binary");
 
         String postData = machine + " state=\"" + state + "\"";
