@@ -94,6 +94,7 @@ void construct_buttons(void)
 {
     int button_size = 100;
     int button_alt = 110;
+    
     lv_obj_t * ButtonRed = lv_btn_create(lv_scr_act());
 
     lv_obj_set_size(ButtonRed, button_size, button_size);  // force: 45

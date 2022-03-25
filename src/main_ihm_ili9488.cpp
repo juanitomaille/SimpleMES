@@ -79,7 +79,7 @@ unsigned long lastMsg = 0;
 char msg[MSG_BUFFER_SIZE];
 int value = 0;
 char data[3];
-char code[3]; // Color of column : 000 = no color; 100 = green, 010 = orange, 001 = red
+char code[3]; // Color of column : 000 = no color; 100 = red, 010 = orange, 001 = green
 
 
 //Change to your screen resolution
@@ -92,7 +92,7 @@ static lv_color_t buf[ screenWidth * 10 ];
 // customer + machine
 
 const char* customer = "USIDUC";
-String machine = "QUASER";
+String machine = "Robodrill 4";
 
 
 const char* state; // statut machine
@@ -314,9 +314,9 @@ void loop()
         i = i + 1 ;
     }
 
-    vert = data[0] - '0'; // method to convert char in int
+    rouge = data[0] - '0'; // method to convert char in int
     orange = data[1] - '0';
-    rouge = data[2] - '0';
+    vert = data[2] - '0';
 
     
 
