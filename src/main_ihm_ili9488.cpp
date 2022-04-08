@@ -50,7 +50,7 @@
 
 // InfluxDB v2 server url, e.g. https://eu-central-1-1.aws.cloud2.influxdata.com (Use: InfluxDB UI -> Load Data -> Client Libraries)
 // InfluxDB 1.8+  (v2 compatibility API) server url, e.g. http://192.168.1.48:8086
-#define INFLUXDB_URL "http://factorybox:8086"
+#define INFLUXDB_URL "http://192.168.0.125:8086"
 // InfluxDB v2 server or cloud API authentication token (Use: InfluxDB UI -> Load Data -> Tokens -> <select token>)
 // InfluxDB 1.8+ (v2 compatibility API) use form user:password, eg. admin:adminpass
 #define INFLUXDB_TOKEN "IiVS3QdWC7tmewfrE4NUdfL8vpIRcOmJgeJI2D-YF9l7KO78e6fPR9kvo1gWOFvSBs5IK-hL117j5O2zIyjP9w=="
@@ -92,10 +92,10 @@ static lv_color_t buf[ screenWidth * 10 ];
 // customer + machine
 
 const char* customer = "USIDUC";
-String machine = "Robodrill 4";
+String machine = "Quaser 234";
 
 
-const char* state; // statut machine
+int state; // code statut machine
 
 
 
@@ -302,10 +302,22 @@ int orange;
 int rouge;
 
 
+// variables used to send data every x secondes
+int timer = 0;
+int sendData = 0;
+
 void loop()
 {
 
-    Wire.requestFrom(2, 3);   // L'adresse du arduino sera 2
+    delay(5000); // we wait 5s between 2 measurements
+
+    // create an index to send data every 60s 
+    if (millis() - timer > 60000) sendData = 1;
+    else sendData = 0;
+
+
+
+    Wire.requestFrom(2, 3);   // arduino adress : 2
     int i = 0;
     while(Wire.available())    // slave may send less than requested
     {
@@ -319,9 +331,19 @@ void loop()
     vert = data[2] - '0';
 
     
+    // Create code for State of Machine
+    /*
+    
+    code 0 : no data,
+    code 1 : production,
+    code 2 : no production,
+    code 3 : Machine stopped, 
+    code 4 : Error
 
+    
+    */
 
-    if (last_rouge != rouge | last_vert != vert | last_orange != orange )
+    if (last_rouge != rouge | last_vert != vert | last_orange != orange | sendData == 1)
     {
 
 
@@ -336,39 +358,39 @@ void loop()
         {
             DPRINTLN("SimpleMES | Machine en production");
             Machine_producing_message();
-            state = "prod";
+            state = 1;
             
         }
         else if (orange == 1 && vert == 0 && rouge == 0)
         {
             DPRINTLN("SimpleMES | Machine en arrêt");
             Machine_stopped_message();
-            state = "arret";   
+            state = 3;   
         }
         else if (rouge == 1 && vert == 0 && orange == 0)
         {
             DPRINTLN("SimpleMES | Machine disponible");
             Machine_available_message();
-            state = "dispo";
+            state = 2;
         }
         else if (vert == 1 && rouge == 1 && orange ==0 )
         {
             DPRINTLN("SimpleMES | Machine en arrêt");
             Machine_stopped_message();
 
-            state = "arret";
+            state = 3;
         }
         else if (vert == 0 && rouge == 0 && orange == 0)
         {
             DPRINTLN("SimpleMES | Pas de signal");
             No_machine_message(); // pas de signal
-            state = "nosignal";
+            state = 0;
         }
         else 
         {
             DPRINTLN("SimpleMES | Erreur !");
             Machine_error_message();
-            state = "erreur";
+            state = 4;
         }
 
          // Define data point in the measurement named 'device_status`
@@ -380,7 +402,14 @@ void loop()
 
 
         // Write data
-        clientInfluxDB.writePoint(pointDevice); 
+        if (!clientInfluxDB.writePoint(pointDevice)) {
+            Serial.print("InfluxDB write failed: ");
+            Serial.println(clientInfluxDB.getLastErrorMessage());
+            sending_error_message(clientInfluxDB.getLastErrorMessage());
+
+            sendData = 0; // initialize send data index,
+            timer = millis(); // record time for initialization of sendData
+        }
         
     }
 
